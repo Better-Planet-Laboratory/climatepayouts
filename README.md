@@ -45,3 +45,4 @@ This work will soon be featured as part of the African Adaptation Atlas, on whic
 An [accompanying article on Medium]( https://medium.com/@ziamehrabi/b4fe5465a8a9) also delves further into the insights from this analysis.
 
 
+![](test3.gif)
