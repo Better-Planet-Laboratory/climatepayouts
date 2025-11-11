@@ -51,12 +51,11 @@ An [accompanying article on Medium]( https://medium.com/@ziamehrabi/b4fe5465a8a9
 
 ## Citation
 
-If you use this dataset, please cite the DOI assigned to it from where you download it:
+If you use this dataset, please use the following citation:
 
-The general citation prior to DOI assignment was:
 
 ```
-Mehrabi, Z., and Braich., B. 2025. Climate payouts. Better Planet Laboratory. 
+Zia Mehrabi and Ginni Braich. (2025). Better-Planet-Laboratory/climatepayouts (Version V1). Zenodo. https://doi.org/10.5281/zenodo.17584804
 ```
 
 ## Acknowledgements
