@@ -1,0 +1,477 @@
+---
+title: "Loss and Damage"
+output: 
+  html_notebook: 
+    toc: true
+date: "`r Sys.Date()`"
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+library(shinythemes)
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(zoo)
+library(shinycssloaders)
+library(leaflet.extras)
+library(scales)
+library(ggrepel)
+library(ggiraph)
+
+#number function
+comprss <- function(tx) { 
+  div <- findInterval(as.numeric(gsub("\\,", "", tx)), 
+                      c(0, 1e3, 1e6, 1e9, 1e12) )  # modify this if negative numbers are possible
+  paste(round( as.numeric(gsub("\\,","",tx))/10^(3*(div-1)), 2), 
+        c("","K","M","B","T")[div] )}
+
+
+#figure1
+new_shp <- st_read("finaloutput/all_shps.shp")
+input0list <- unique(new_shp$nm_slc0)
+countrylist <- unique(new_shp$NAME_0)
+farmsizelist <- unique(new_shp$farm_sz2)
+variablelist <- unique(new_shp$variable)
+allfarms <- read_csv("finaloutput/farmsizelookup.csv")
+
+
+
+#figure2
+models <- read_csv("finaloutput/joined_eff.csv")
+grouplist <- unique(models$group)
+modlist <- unique(models$title)
+
+#figure 3
+joint2 <- read_csv("finaloutput/spei_12_high_counts.csv")
+ensemble2 <- joint2 %>% filter(gcm=="Ensemble Average")
+joint3 <- joint2 %>% filter(gcm!="Ensemble Average")
+
+
+#figure4a
+fig3_shp <- st_read("finaloutput/fig3_map_fin_spei12_high.shp")
+inputlist_3 <- unique(fig3_shp$nm_slc0)
+countrylist_3 <- unique(fig3_shp$NAME_0)
+farmsizelist_3 <- unique(fig3_shp$farm_sz2)
+event_3 <- unique(fig3_shp$Event)
+model_3 <- unique(fig3_shp$model)
+
+#figure4b
+models2 <- read_csv("finaloutput/allloss_by_threshold_fin_spei12_high_all.csv")
+
+```
+## README
+
+"This notebook contains a draft narrative and dynamic visual story intended for the [Africa Adaptation Atlas](https://adaptationatlas.cgiar.org/).
+
+Integration in the Atlas will require adaptation to Observable including aligning styling and additional work will be required to check copy and adapt it as needed for public distribution.
+
+You can check final versions prior to release with Zia Mehrabi and Ginni Braich (ziamehrabi@colorado.edu or ginni.braich@gmail.com).
+
+A significant amount of data was developed for this notebook. Repositories containing all methodological details can be found [here]( https://github.com/Better-Planet-Laboratory/climatepayouts).
+
+The data underlying (needed to run) this notebook can be found [here](https://doi.org/10.5281/zenodo.17584804).
+
+Authors: Zia Mehrabi and Ginni Braich.
+
+\
+
+## Overview
+
+Agriculture supports the livelihoods of over 2.5 billion people, mostly in low-income developing countries. Food production is largely dependent on weather, and the variability of heat and rain in the growing season can lead to high yields or conversely, damaged plants and poor harvests. Agriculture, relative to other industries, bears a disproportionate [63% share of loss and damage](https://openknowledge.fao.org/server/api/core/bitstreams/30c0d98d-1c21-48ef-b5d9-8d988e6fa6f2/content) from disasters such as drought, flooding, pest and disease. [These losses, between 2008-2018, represent 108.5B USD lost due to declines in crop and livestock production in LMICs following disasters, with over 30B lost in Africa alone](https://openknowledge.fao.org/server/api/core/bitstreams/30c0d98d-1c21-48ef-b5d9-8d988e6fa6f2/content). Of these disasters, drought and floods represent the largest source of agricultural losses at [34% and 19% respectively](https://openknowledge.fao.org/server/api/core/bitstreams/30c0d98d-1c21-48ef-b5d9-8d988e6fa6f2/content).
+
+Farmers are not often well equipped to deal with these losses and it can represent a significant source of economic hardship, particularly in the global south where crop insurance and farmer assistance programs are lacking. Given the variability in weather and affected farms, it is also not always abundantly clear which farms are most impacted and where. The scale of the systems required for making these payouts is poorly understood, but critical for implementation down the road. This includes improvements in payment systems and recovery supports needed as well better forecasting the size of programs needed for adaptation and risk reduction, given future climate scenarios.
+
+In this notebook we estimate the number of farms that will likely face losses or lost revenue due to extreme events as well as what states/provinces in African countries will be most impacted, using farm size distributions and historical and future extreme event occurence. We also estimate the average number of farms that will need paying out, numbers that are crucial for the development of programs and policies to address these challenges and inequities.
+
+\
+
+### Farmers & Farm Size in Africa
+
+Agriculture is a key industry in Africa, where [50% of the region's workforce](https://www.fao.org/4/i2490e/i2490e01b.pdf) engages in farming and it accounts for [15% of the continent's GDP](https://openknowledge.fao.org/server/api/core/bitstreams/b33cbb8d-eb27-487c-acab-6e7a705b3ac9/content). Smallholders, small-scale farmers that manage areas varying from less than 1 hectare to 20 hectares, make up the majority of Africa's farms and provide [up to 80%](https://www.fao.org/fileadmin/templates/nr/sustainability_pathways/docs/Factsheet_SMALLHOLDERS.pdf) of the food supply to the continent. The number of farms by farm class size differ by countries across Africa, and there are expected shifts in the distribution by 2050. Here you can explore the number of farms by farm class size across the countries and sub-national regions in Africa and how they are predicted to change by 2050.
+
+
+```{r exhibit1, echo=FALSE}
+
+
+inputPanel(
+  selectInput(inputId="name0", 
+              label = "Country",
+              choices = input0list,
+              selected="Sub-Saharan Africa"),
+  selectInput(inputId="fs", 
+              label = "Farm Size",
+              choices = farmsizelist,
+              selected="All Farms"),
+  selectInput(inputId="vars", 
+              label = "Time Period",
+              choices = variablelist,
+              selected="Current Farms")
+)
+
+renderLeaflet({
+  p <- new_shp %>% filter(nm_slc0==input$name0  & farm_sz2==input$fs & variable==input$vars)
+  
+  pal <- colorNumeric(palette = "YlGn", domain = p$value)
+  
+  labels <- sprintf(
+    "<strong>Area</strong>: %s<br/> <strong>Number of farms</strong>: %g",
+    p$NAME_0, p$value) %>% lapply(htmltools::HTML)
+  
+  leaflet() %>% 
+    addProviderTiles(providers$CartoDB.VoyagerNoLabels) %>% 
+    addPolygons(data = p, color = "black", weight=1, smoothFactor = 0.5, opacity=1.0, 
+                fillOpacity = 1, fillColor = pal(p$value), 
+                highlightOptions = highlightOptions(color="white",weight=2, bringToFront = TRUE),
+                label = labels,
+                labelOptions = labelOptions(
+                  style = list("font-weight" = "normal", padding = "3px 8px"),
+                  textsize = "15px",
+                  direction = "auto")) %>% 
+    addLegend(data = p,
+              position = "bottomright",
+              pal = pal, values = ~value,
+              title = "Number of Farms",
+              opacity = 1)
+})
+
+
+renderUI({
+  fig1tx_present <- allfarms %>% filter(nm_slc0==input$name0 & farm_sz2==input$fs & variable=="Current Farms")
+  sumpr <- sum(fig1tx_present$value)
+  fig1tx_future <- allfarms %>% filter(nm_slc0==input$name0 & farm_sz2==input$fs & variable=="Farms 2050")
+  sumfr <- sum(fig1tx_future$value)
+  pct <- (sumfr-sumpr)/sumpr*100
+  trend <- ifelse(pct>0, "an increase", "a decrease")
+
+  div(
+  h4(paste0("Quick Insights for ", input$name0)),
+  tags$b(paste0(input$name0)),
+  paste0("has a total of "),
+  tags$b(paste0(comprss(sumpr))),
+  paste0("farms in the"),
+  tags$b(paste0(input$fs)),
+  paste0("farm size class for the baseline year, circa 2020."),
+
+  tags$br(),
+  tags$br(),
+  paste0("The total number of farms is expected to change to"),
+  tags$b(paste0(comprss(sumfr))),
+  paste0("by 2050, under SSP 245. This represents"),
+  tags$b(paste0(trend)),
+  paste0("of"),
+  tags$b(paste0(round(pct,1), "%."))
+
+)
+
+})
+```
+
+\
+
+### Loss from Extreme Events
+
+As shown there is largely variability in the number of farms and farm size across the African continent. Farms are differently affected by natural hazards such as drought and floods, some of which can be attributed to the size of the farm. The predicted probability of loss and predicted probability of lost revenue, we show, is related to farm size as well as the type of hazard. Using the dropdowns you can explore these relationships between farm size and loss or lost revenue by type of hazard.
+
+
+
+```{r exhibit2, echo=FALSE}
+
+inputPanel(
+  selectInput(inputId="event", 
+              label = "Event Type",
+              choices = grouplist,
+              selected="Drought"),
+  selectInput(inputId="loss", 
+              label = "Loss",
+              choices = modlist,
+              selected="Predicted Probabilities of Loss")
+)
+
+
+renderPlot({
+  p2 <- models %>% filter(group==input$event & title==input$loss)
+  pal <- unique(p2$pal)
+  yax <- unique(p2$yax)
+  title2 <- unique(p2$title)
+  
+  ggplot(p2, aes(x=x, y=predicted, group=group)) +
+  geom_line(color=pal) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), fill=pal, alpha=0.3) +
+  theme_light() +
+  labs(x="Log Farm Size", y=yax, title = title2) + 
+  theme(legend.position="none") +
+  theme(legend.title=element_blank()) +
+  theme(text = element_text(size = 14)) + 
+    scale_y_continuous(labels = scales::percent)
+
+})
+
+  renderUI({
+  p2 <- models %>% filter(group==input$event & title==input$loss)
+  trend <- p2$trend %>% unique()
+  
+  div(
+  h4(paste0("Quick Insights for ", input$loss)),
+  paste0("The "),
+  tags$b(paste0(tolower(input$loss))),
+  paste0("from ", tolower(input$event)),
+  tags$b(paste0(trend)),
+  paste0("as farms sizes get larger.")
+  
+
+ 
+)
+})
+
+```
+
+\
+
+### Model Ensembles are Conservative Estimates of Extreme Events
+
+To estimate the potential loss and lost revenue by farm size both historically and in the future for African farms, we need to determine the occurrence and frequency of extreme events. To determine these events we use the Standardized Precipitation-Evapotranspiration Index (SPEI), which is an multi-scalar drought index which can be used to determine very dry and very wet conditions. *match to emdat sentence Five models from the 6th Coupled Model Intercomparison Project (CMPI6) which have been [identified](https://link.springer.com/article/10.1007/s40808-025-02560-3#Sec5) as having high performance for simulating climate in Africa were used to develop an ensemble average for the historical period (1995-2014) as well as two [future scenarios](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change/) (2040-2060): SPP245, a middle of the road emissions scenario and SSP585, a high emissions scenario. We show the ensemble means, which we use to estimate loss and lost revenue in the next section, are remarkably conservative compared to the CMIP6 model outputs for both very wet and very dry conditions.
+
+```{r exhibit 3, echo=FALSE}
+
+renderPlot({
+pd <- position_dodge(width = 0.9)   
+
+ggplot() +
+  geom_col(
+    data = ensemble2,
+    aes(x = model, y = count, fill = variable),
+    position = pd,
+    alpha=0.5
+  ) +
+  geom_point(
+    data = joint3,
+    aes(x = model, y = count, colour = gcm, group = variable),
+    position = pd,
+    size = 3,
+    alpha=0.3,
+  ) +
+  theme_bw() +
+  labs(y = "Number of Events", x = "", colour = "Models", fill = "") +
+  guides(colour = guide_legend(override.aes = list(size = 3)
+  )) +
+  coord_flip() +
+  scale_fill_manual(labels = c("Ensemble Average - Very Dry", "Ensemble Average - Very Wet"), values = c("red1", "blue1")) +
+  scale_color_brewer(palette = "Dark2") +   
+  theme(text = element_text(size = 14)) +
+  scale_x_discrete(limits=rev)
+
+
+
+})
+
+
+renderUI({
+ div(
+  h4(paste0("Quick Insights for Extreme Events")),
+  paste0("The number of very dry events are expected to "),
+  tags$b(paste0("increase")),
+  paste0("by 2040-2060 for both SSP245 and SSP585."),
+  tags$br(),
+  paste0("The number of very wet events are expected to "),
+  tags$b(paste0("decrease")),
+  paste0("by 2040-2060 for both SSP245 and SSP585."),
+  tags$br(),
+  paste0("The number of very dry and very wet events are "),
+  tags$b(paste0("lower")),
+  paste0("for the ensemble average compared to individual models, with high model variability.")
+  
+)
+})
+
+
+
+```
+
+
+\
+
+### Loss by Farm Type: Historical and Future
+
+As we have outlined above, agriculture in critical to Africa and there is diversity in terms of the number of farms by farm size class across the country. Extreme weather such as droughts and floods, which are exacerbated by climate change as we show above, can cause losses on farms which in turn results in lost revenue, and both of these vary by farm size class. Below the map illusrates the average number of farms that experience extreme events (very wet or very dry) over the time period. We can also explore the number of farms that have likely been affected by losses due to extreme events such as very dry and very wet conditions in our baseline period (1995-2014) and could be potentially be impacted under future climate scenarios (SSP245 or SSP585). Furthermore, you can also explore the amount of revenue that could potentially be lost on these farms under either the baseline period or future climate scenarios for very dry and very wet events without additional adaptation.
+
+```{r exhibit 4, echo=FALSE}
+
+inputPanel(
+  selectInput(inputId="name3", 
+              label = "Country",
+              choices = inputlist_3,
+              selected="Sub-Saharan Africa"),
+  
+  selectInput(inputId="fs3", 
+              label = "Farm Size",
+              choices = farmsizelist_3,
+              selected="All Farms"),
+  
+   selectInput(inputId="time3", 
+              label = "Climate Model",
+              choices = model_3,
+              selected="baseline"),
+  
+  selectInput(inputId="ee", 
+              label = "Event Type",
+              choices = event_3,
+              selected="Very Dry"),
+  
+  
+)
+
+
+renderLeaflet({
+p3 <- fig3_shp %>% filter(nm_slc0==input$name3 & farm_sz2==input$fs3 & Event==input$ee & model==input$time3)
+
+pal3 <- colorNumeric(palette = "YlGn", domain = p3$high_fs)
+
+labels <- sprintf(
+  "<strong>Area</strong>: %s<br/> <strong>Number of farms affected</strong>: %g",
+  p3$NAME_0, p3$high_fs) %>% lapply(htmltools::HTML)
+
+
+ leaflet() %>% 
+  addProviderTiles(providers$CartoDB.VoyagerNoLabels) %>% 
+  addPolygons(data = p3, color = "black", weight=1, smoothFactor = 0.5, opacity=1.0, 
+              fillOpacity = 1, fillColor = pal3(p3$high_fs), 
+              highlightOptions = highlightOptions(color="white",weight=2, bringToFront = TRUE),
+              label = labels,
+  labelOptions = labelOptions(
+    style = list("font-weight" = "normal", padding = "3px 8px"),
+    textsize = "15px",
+    direction = "auto")) %>% 
+  addLegend(data = p3,
+            position = "bottomright",
+            pal = pal3, values = ~high_fs,
+            title = "Average Number of Affected Farms",
+            opacity = 1)
+})
+
+renderGirafe({
+  
+  p4 <- models2 %>% filter(nm_slc0==input$name3 & farm_sz2==input$fs3 & Event==input$ee & model==input$time3)
+ 
+  
+  g <- p4 %>% 
+  mutate(label = if_else(year == max(year), as.character(threshold), NA_character_)) %>%
+  ggplot(aes(x=year, y=cum_sum, group=threshold, colour=threshold)) +
+  geom_line_interactive(aes(color=threshold, fill=threshold), linewidth=1.5) + 
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6)) +
+  geom_label_repel(aes(label = label),
+                   nudge_x = 0.2, force = 2, hjust=0,
+                   na.rm = TRUE) +
+  theme_light() +
+  facet_wrap(~losstype) +
+  theme(legend.position = "none",
+        strip.background=element_rect(colour="black",
+                                    fill="white"),
+        strip.text = element_text(colour = 'black'))  +
+  labs(y="Average Affected Farms", x="") +
+  theme(text = element_text(size = 10))
+ 
+  my_gg <- g + 
+  geom_line_interactive(aes(tooltip = threshold, data_id = threshold), 
+    size = 3, hover_nearest = TRUE)
+girafe(ggobj = my_gg) 
+
+})
+
+
+
+renderUI({
+   p4 <- models2 %>% filter(nm_slc0==input$name3 & farm_sz2==input$fs3 & Event==input$ee & model==input$time3)
+    maxyear <- p4 %>% select(year) %>% filter(year==max(year)) %>% unique()
+    minyear <- p4 %>% select(year) %>% filter(year==min(year)) %>% unique()
+    max <- p4 %>% filter(year==max(year))
+    max_loss <- max %>% filter(losstype=="Loss")
+    max_threshold <- max %>% filter(losstype=="Revenue") %>% slice_max(threshold2)
+    min_threshold <- max %>% filter(losstype=="Revenue") %>% slice_min(threshold2)
+    payout <- max_loss$cum_sum/(maxyear-minyear)
+
+  
+  div(
+  h4(paste0("Quick Insights for ", input$name3)),
+  paste0("Between ", minyear, " and ", maxyear, ", an estimated"),
+  tags$b(paste0(comprss(max_loss$cum_sum))),
+  paste0(" cummulative number of farms (", input$fs3, " farm size class) will likely experience losses due to "),
+  tags$b(paste0(tolower(input$ee))),
+  paste0("conditions in"),
+  tags$b(paste0(input$name3)),
+  paste0(" under the ",input$time3 ," model. This represents the potential need to"),
+  tags$b(paste0("payout")),
+  paste0("an average of"),
+  tags$b(paste0(comprss(payout))),
+  paste0("farms per year."),
+  tags$br(),
+  tags$br(),
+  paste0("Of the farms likely impacted, a cummulative "),
+  tags$b(paste0(comprss(min_threshold$cum_sum))),
+  paste0(" farms could lose more than "),
+  tags$b(paste0(min_threshold$threshold2,"%")),
+  paste0("of their revenue and approximately "),
+  tags$b(paste0(comprss(max_threshold$cum_sum))),
+  paste0(" cummulative farms could lose more than"),
+  tags$b(paste0(max_threshold$threshold2, "%")),
+  paste0("of their revenue due to "),
+  tags$b(paste0(tolower(input$ee))),
+  paste0("conditions in"),
+  tags$b(paste0(input$name3)),
+  paste0(" under the ",input$time3 ," model."),
+  tags$br(),
+  tags$br()
+)
+})
+
+```
+
+\
+
+### Summary
+Climate change will significantly impact farms, their productivity and farmer's livelihoods on the African continent. This will have weighty implications for food security, economic development, human health, and vulnerable rural communities. Disaster events are worsening and the impact of climate change-driven extreme events such as droughts and floods depend not only on the climate scenarios, such as forcing and warming under SSP245 or SSP585, but also on different farm size classes. Overall, although losses worsen for both very dry and very wet conditions for larger farm sizes, the proportion of revenue lost is highest for the smallest farms who usually have the least ability to weather such economic shocks. Looking to the future, we see that the incidence of loss and damage to farms in Africa is expected to increase with higher probabilities of extreme events and a greater number of farms. There are a number of solutions that have been proposed to address this challenge of increasing climate-change driven losses on farms, including improved farmer assistance programs, broadening crop insurance programs and their payouts, expanding irrigation infrastructure and through improved seeds and training. Multi-party funds meant to directly address loss and damage through adaptation programs.
+
+\
+
+### Methods
+
+#### Farm size projections
+
+We integrate spatial, demographic, and agricultural datasets to generate harmonized projections of African farm size distributions from 2000 to 2060. Spatial farm structure data from the CIAT/LUGE Smallholder Map were combined with demographic projections from SSP2T and validated against the FAO World Census of Agriculture, alongside auxiliary sources such as Ricciardi et al. (2018) and Aliber & Hart (2009). For each country and administrative unit, representative farm sizes were sampled from uniform or log-normal distributions by size class, weighted by farm counts, and corrected via a mean-shift algorithm to align with projected agricultural area totals. Corrected samples were rebinned into standardized size categories and adjusted according to one of three data availability cases—full data (spatial + demographic), demographic-only, or spatial-only—using proportional scaling, continental averages, or Ethiopia-based growth factors, respectively. Missing values were filled using country or continental means, and all outputs were validated to ensure consistency with farm totals, agricultural area, and realistic distributional shapes. The resulting harmonized dataset provides subnational farm size distributions for all African countries at decadal intervals through 2060.
+
+#### Loss and proportion of lost reveneue probabilities
+
+We examine how agricultural production losses from climate shocks (droughts and floods) vary as a function of farm size using harmonized household survey data from 17 countries across Africa, Asia, and Latin America. The study employs a dataset developed by Mehrabi, Fortin, and Ramankutty, which integrates household-level farm size, reported production losses, and corresponding climatic indicators (SPEI). Data preparation included country-specific scaling and outlier corrections to harmonize farm size distributions and log-transformations to address skewness. Two main model types were implemented: (1) binary loss models estimating the probability of experiencing a climate-induced production loss, and (2) continuous loss models quantifying the percentage of revenue lost. Both models incorporated interactions between log-transformed farm size and event type (drought or flood) and used multilevel random effects structures to account for nested spatial hierarchies (country and administrative units). Models were further filtered for high SPEI thresholds (< –0.99 for drought, > 0.99 for flood) to isolate the effects of severe climatic events. Diagnostic checks, including residual simulation and bootstrapping, were used to validate model assumptions, ensuring robust inference on the relationship between farm size and vulnerability to climate shocks.
+
+#### Historical and CMIP6 estimates of loss by farm type
+
+We estimate the number of extreme climate events and their impacts on African farms by integrating climate, disaster, and agricultural datasets. Annual growing-season extremes of the Standardized Precipitation Evapotranspiration Index (SPEI) were computed at the subnational level across Africa for the historical period (1995–2015) and for future projections (2040–2060) under SSP245 and SSP585 scenarios, using ensemble means derived from five CMIP6 global climate models (GFDL-ESM4, EC-Earth3, MPI-ESM1-HR, MRI-ESM2-0, NorESM2-LM). Extreme events were defined as years when SPEI values exceeded ±1, corresponding to very wet or very dry conditions. These modeled events were validated against the EM-DAT disaster database to confirm that the SPEI-based approach captured the timing and spatial distribution of major historical droughts and floods. Once validated, the frequency of extreme events was used in combination with the above empirically derived loss functions and 2020-2050 farm projections linking farm size to production and revenue losses. For each administrative unit and farm size class, the probability of farms experiencing loss was estimated for each year and climate scenario, and corresponding revenue losses were calculated as proportional reductions in farm income. The outputs include both yearly averages and cumulative totals of farms and % of revenue affected, allowing comparison of historical and future exposure to extreme climate events across Africa.
+
+\
+
+### Additional methods
+
+More information on methods for farm projections estimates are available at this [repository](https://github.com/Better-Planet-Laboratory/africafarmprojections).
+
+More information on methods for loss functions are available at this [repository](https://github.com/Better-Planet-Laboratory/farm-loss-farmsize).
+
+More information on methods including SPEI-derived wet and dry events and estimates of farms experiencing losses and the proportion of lost revenue by farm size are available at this [repository](https://github.com/Better-Planet-Laboratory/climatepayouts).
+
+Full methodological details will also be contained in the forthcoming paper:
+
+Mehrabi, Z., Braich, G., Fortin, J., Ramankutty, N., 2025. Climate payouts to smallholder farmers. LUGE lab/Better Planet Laboratory.
+
+\
+
+### Citations
+
+To cite this notebook : 
+Mehrabi, Z., Braich, G. 2025. Climate payouts to smallholders. Africa Agriculture Adaptation Atlas. CGIAR.
+
+
+
+
+
+
