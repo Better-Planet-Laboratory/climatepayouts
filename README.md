@@ -51,13 +51,14 @@ An [accompanying article on Medium]( https://medium.com/@ziamehrabi/b4fe5465a8a9
 
 ## Citation
 
-If you use this dataset, please use the following citation:
+If you use this dataset, please use the following citations:
 
 
 ```
 Zia Mehrabi and Ginni Braich. (2025). Better-Planet-Laboratory/climatepayouts (Version V1). Zenodo. https://doi.org/10.5281/zenodo.17584804
+```
+```
 Zia Mehrabi. (2025). Better-Planet-Laboratory/africafarmprojections (Version V1). Zenodo. https://doi.org/10.5281/zenodo.17583015
-
 ```
 
 ## Acknowledgements
