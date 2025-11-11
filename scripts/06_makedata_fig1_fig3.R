@@ -6,7 +6,7 @@ library(sf)
 
 
 ## Part 1: Figure 1 Abridged farm counts
-fs <- st_read("spei_analysis/final_scripts/inputdata/africa_2020_2050sizes.shp")
+fs <- st_read("inputdata/africa_2020_2050sizes.shp")
 fs_shp <- fs %>% select(-farm_sz, -year, -value) %>% unique()
 
 fs$variable <- ifelse(fs$year==2020, "Current Farms", "Farms 2050")
