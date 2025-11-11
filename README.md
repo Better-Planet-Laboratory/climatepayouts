@@ -22,10 +22,7 @@ Farm sizes | The estimates for the number of farms by farm size for Africa were 
 |EM-DAT disaster database | The EM-DAT database contained data on over 27,000 disasters from 1900 to the present day and can be obtained [here]( https://www.emdat.be).
 
 ## Methodology
-To estimate loss and proportion of lost revenue from farms, both currently and into the future we first developed yearly growing season estimate of SPEI at the admin1 level in Africa for the historical, SSP245 and SSP585 scenarios.
-The number of estimated events was compared for both the GCMs and ensemble average to the EM-DAT disaster database to confirm that the derived seasonal SPEI values were capturing at least some major historical flood and droughts in Africa.
-The total number of extreme events (SPEI>1 or SPEI<-1) were computed for each year in each admin 1 unit for the historical, SSP245 and SSP585 scenarios, both for ensemble averages and all GCMs. 
-The number of farms likely to experience loss was calculated using the loss and damage functions to estimate the % of loss by farm size class when that location had an extreme event. Similarly, proportion of lost revenue was calculated using the loss and damage function and the previously estimated farms likely experiencing a loss. These resulting insights are both a yearly average and cumulative sum of the either the number of farms experiencing a loss or the proportion of their revenue that is lost for each farm size class and admin 1 unit in Africa under either a historical, SSP245 or SSP585 scenario.
+We estimate the number of extreme climate events and their impacts on African farms by integrating climate, disaster, and agricultural datasets. Annual growing-season extremes of the Standardized Precipitation Evapotranspiration Index (SPEI) were computed at the subnational level across Africa for the historical period (1995–2015) and for future projections (2040–2060) under SSP245 and SSP585 scenarios, using ensemble means derived from five CMIP6 global climate models (GFDL-ESM4, EC-Earth3, MPI-ESM1-HR, MRI-ESM2-0, NorESM2-LM). Extreme events were defined as years when SPEI values exceeded ±1, corresponding to very wet or very dry conditions. These modeled events were validated against the EM-DAT disaster database to confirm that the SPEI-based approach captured the timing and spatial distribution of major historical droughts and floods. Once validated, the frequency of extreme events was used in combination with empirically derived loss functions and 2020-2050 farm projections linking farm size to production and revenue losses. For each administrative unit and farm size class, the probability of farms experiencing loss was estimated for each year and climate scenario, and corresponding revenue losses were calculated as proportional reductions in farm income. The outputs include both yearly averages and cumulative totals of farms and % of revenue affected, allowing comparison of historical and future exposure to extreme climate events across Africa.
 
 #### Table 2: Scripts
 
@@ -38,7 +35,7 @@ The number of farms likely to experience loss was calculated using the loss and 
 |5_compute_loss_rev | Estimate loss and lost proportion of revenue by farm size for extreme events, calculate cumulative sums and yearly averages.|
 
 ## Outputs
-The outputs of this work include a R markdown notebook “Climate payouts to smallholder farmers” as well as the supporting files needed, which can be found here.
+The outputs of this work include a [R markdown notebook “Climate payouts to smallholder farmers”](notebook/notebook_lossanddamage_spei.Rmd) as well as the supporting files needed, which can be found [here](https://o365coloradoedu-my.sharepoint.com/:f:/r/personal/zime6804_colorado_edu/Documents/BetterPlanetLab/Projects/Loss_and_damage/notebook_files?csf=1&web=1&e=OFWw5i).
 
 This work will soon be featured as part of the African Adaptation Atlas, on which more detail can be found [here](https://adaptationatlas.cgiar.org). We will update once the notebook is live on that platform.
 
