@@ -5,10 +5,9 @@ library(tidyverse)
 
 
 #load admin units data and get ids
-units_path  <- "inputdata/tests_shps.shp"  # polygons (any CRS)
+units_path  <- "inputdata/africa_2020_2050sizes.shp"
 units_sf <- st_read(units_path, quiet = TRUE) %>%
-  #filter(nm_slc0 != "Sub-Saharan Africa") %>%
-  select(-farm_sz, -frm2020, -NAME_0) %>% unique()
+  select(-NAME_0, -value, -year, -farm_sz) %>% unique()
 units_all <- units_sf %>% st_drop_geometry()
 units_all <- units_all %>% select( GID_0, nm_slc0, NAME_1)
 colnames(units_all) <- c("ISO", "Country", "Admin1_og")

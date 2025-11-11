@@ -3,8 +3,10 @@
 ## Load packages
 library(terra)
 library(tidyverse)
+library(sf)         
 
-### Extract historical
+
+### Part 1: Extract historical
 ## Step 1: Load monthly tif files 
 spei_val <- "spei_6"
 model <- "gfdlesm4"
@@ -55,11 +57,7 @@ writeRaster(
 cat("Wrote:", out_tif, "\n")
 
 
-
-
-
-
-### Extract SSPs
+### Part 2: Extract SSPs
 ## Step 1: Load monthly tif files 
 spei_val <- "spei_6"
 model <- "mpiesmhr"
@@ -109,22 +107,11 @@ writeRaster(
 )
 cat("Wrote:", out_tif, "\n")
 
-plot(r[[1]])
 
 
 
-
-
-
-#---------------------------------
-#if there are blanks in the file
-
-library(terra)
-library(sf)          # for sf::gdal_utils
-library(dplyr)
-library(stringr)
-
-in_dir <- "inputdata/gfdlesm4_historical/"   # change me
+### Part 3: To deal with blank/corrupted files
+in_dir <- "inputdata/gfdlesm4_historical/"   
 files  <- list.files(in_dir, pattern = "^spei_6_.*_[0-9]{6}\\.tif$", full.names = TRUE)
 stopifnot(length(files) > 0)
 
@@ -253,13 +240,9 @@ writeRaster(
 )
 cat("Wrote:", out_tif, "\n")
 
-plot(r[[1]])
 
 
-
-
-#---------------------------------
-#Get ensemble averages
+### Part 4: Get ensemble averages
 #load rasters
  # r1 <- rast("intermediate/spei_6_gfdlesm4_historical_1995_2015_stack.tif")
  # r2 <- rast("intermediate/spei_6_ecearth3_historical_1995_2015_stack.tif")
@@ -300,8 +283,7 @@ align <- function(r) {
 }
 rs <- lapply(rs, align)
 
-# 2) Stack all layers: order will be r1_1..r1_240, r2_1..r2_240, ..., r5_1..r5_240
-stk <- do.call(c, rs)
+# 2) Stack all layers
 
 # 3) Build a grouping index: 1..240 repeated for each model (5 times)
 k <- nlyr(rs[[1]])           # e.g., 240

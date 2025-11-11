@@ -1,4 +1,4 @@
-### Script 2: Extract Growing Season Min/Max SPEI from GCMs
+### Script 2: Extract Growing Season Min/Max SPEI from GCMs and Ensemble Average
 
 ## Load packages
 library(terra)
@@ -14,10 +14,14 @@ modeltype <- "ssp585"
 year_start  <- 2040
 year_end    <- 2060
 
+#create path to SPEI files developed in Script 1
 spei_path   <- paste0("intermediate/", spei_val, "_", model, "_", modeltype, "_", year_start, "_", year_end, "_stack.tif")  
+#load cropland map from Ramankutty et al. 2008
 cropland_fp <- "inputdata/CroplandPastureArea2000_Geotiff/Cropland2000_5m.tif"  # fraction 0..1
+#load crop calendars from Sacks et al. 2010
 calendar_dir<- "inputdata/ALL_CROPS_netCDF_0.5deg_filled/"  # each file has 'plant' & 'harvest' DOY
-units_path  <- "inputdata/tests_shps.shp" #admin 0 & 1 shapefiles
+#load admin1 and admin0 shapefiles
+units_path  <- "inputdata/africa_2020_2050sizes.shp" 
 
 # Optional area of interest (AOI) crop (xmin, xmax, ymin, ymax) for speed
 aoi_extent  <- NULL
@@ -25,7 +29,6 @@ aoi_extent  <- NULL
 
 # Output
 out_csv     <- paste0("intermediate/", spei_val, "_", model, "_", modeltype, "_", year_start, "_", year_end,"_admin1_gsminmax.csv")
-
 
 
 
@@ -184,8 +187,7 @@ library(sf)
 library(lwgeom)
 
 units_sf <- st_read(units_path, quiet = TRUE) %>%
-  #filter(nm_slc0 != "Sub-Saharan Africa") %>%
-  select(-farm_sz, -frm2020, -nm_slc0) %>% unique()
+  select(-farm_sz, -year, -value, -nm_slc0) %>% unique()
 
 # 1) Basic fixes in lon/lat are fine
 units_sf <- st_make_valid(units_sf)
