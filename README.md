@@ -21,7 +21,7 @@ Farm sizes | The estimates for the number of farms by farm size for Africa were 
 |Historical and CMIP6-derived SPEI| SPEI data was obtained from [Araujo et al. 2025]( https://www.nature.com/articles/s41597-025-04612-w) and included SPEI-12/SPEI-6 estimates for the historical period (1995-2015) as well as for 2040-2060 for SSP245 and SSP585. Five CMIP6 GCMs were selected for [improved performance in simulating precipitation and temperature over Africa]( https://doi.org/10.1007/s40808-025-02560-3) to develop an ensemble average, and included GFDL-ESM4, EC-Earth3, MPI-ESM1-HR, MRI-ESM2-0 and NorESM2-LM.|
 |EM-DAT disaster database | The EM-DAT database contained data on over 27,000 disasters from 1900 to the present day and can be obtained [here]( https://www.emdat.be).|
 |Cropland Maps | Cropland area fraction obtained from [Ramankutty et al. 2008](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2007GB002952) with data available [here](http://www.earthstat.org/cropland-pasture-area-2000/).
-|Crop Calendars | Crop calendars were obtained from [Sacks et al. 2010])(https://onlinelibrary.wiley.com/doi/10.1111/j.1466-8238.2010.00551.x) with data available [here](https://sage.nelson.wisc.edu/data-and-models/datasets/crop-calendar-dataset/).
+|Crop Calendars | Crop calendars were obtained from [Sacks et al. 2010](https://onlinelibrary.wiley.com/doi/10.1111/j.1466-8238.2010.00551.x) with data available [here](https://sage.nelson.wisc.edu/data-and-models/datasets/crop-calendar-dataset/).
 
 
 ## Methodology
