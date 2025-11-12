@@ -1,6 +1,6 @@
-# Climate payouts to smallholder farmers
+# Climate payouts
 ## Overview
-This repository contains statistical analysis to develop the “Climate payouts to smallholder farmers” notebook for the African Adaptation Atlas. The analysis builds on [work]( https://github.com/Better-Planet-Laboratory/africafarmprojections) from Zia Mehrabi that developed African farm size distributions from 2000-2050 as well as [analysis]( https://github.com/Better-Planet-Laboratory/farm-loss-farmsize) from Zia Mehrabi, Julie Fortin and Navin Ramankutty that harmonizes household survey data to examine the relationship between farm size and climate shock impacts.
+This repository contains statistical analysis to develop the “Climate payouts” notebook for the African Adaptation Atlas. The analysis builds on [work]( https://github.com/Better-Planet-Laboratory/africafarmprojections) from Zia Mehrabi that developed African farm size distributions from 2000-2050 as well as [analysis]( https://github.com/Better-Planet-Laboratory/farm-loss-farmsize) from Zia Mehrabi, Julie Fortin and Navin Ramankutty that harmonizes household survey data to examine the relationship between farm size and climate shock impacts.
 For the notebook, we have developed methods to estimate the number of farms experiencing losses due to extreme events as well as the percentage of revenue lost, while also considering the relationship of farm size and type of climate shock.
 
 The key insights derived from this analysis are:
@@ -40,7 +40,7 @@ We estimate the number of extreme climate events and their impacts on African fa
 |06_makedata_fig1_fig3 | Create additional files needed for figure 1 and figure 3 of the notebook.|
 
 ## Outputs
-The outputs of this work include a [R markdown notebook “Climate payouts to smallholder farmers”](notebook/notebook_climatepayouts_spei.Rmd) as well as the supporting files needed, which can be found [here](https://doi.org/10.5281/zenodo.17584804).
+The outputs of this work include a [R markdown notebook “Climate payouts”](notebook/notebook_climatepayouts_spei.Rmd) as well as the supporting files needed, which can be found [here](https://doi.org/10.5281/zenodo.17584804).
 
 This work will soon be featured as part of the African Adaptation Atlas, on which more detail can be found [here](https://adaptationatlas.cgiar.org). We will update once the notebook is live on that platform.
 
